@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerador de Chaves — GymControl</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#04090e] text-slate-100 min-h-screen flex items-center justify-center p-4 font-sans">
+  <div class="bg-[#0c1720] border border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4">
+    <div>
+      <span class="text-[11px] font-bold uppercase tracking-widest text-teal-400">Administração Interna</span>
+      <h1 class="text-xl font-extrabold text-white mt-0.5">Gerador de Chaves (+30 Dias)</h1>
+      <p class="text-xs text-slate-400 mt-1">Gera chaves compatíveis com <code class="text-teal-300">verificarChaveOffline</code> no GymControl.</p>
+    </div>
+
+    <div>
+      <label class="block text-xs font-semibold text-slate-400 mb-1">ID do Ginásio (gymId) *</label>
+      <input type="text" id="gym-id" placeholder="Ex: GYM-4821"
+             class="w-full p-3 rounded-2xl bg-[#04090e] border border-slate-800 text-sm text-white uppercase outline-none focus:border-teal-400">
+    </div>
+
+    <div>
+      <label class="block text-xs font-semibold text-slate-400 mb-1">Código do Lote / Mês *</label>
+      <input type="text" id="lote-chave" value="MES01" placeholder="Ex: MES01 ou 202612"
+             class="w-full p-3 rounded-2xl bg-[#04090e] border border-slate-800 text-sm text-white uppercase outline-none focus:border-teal-400">
+    </div>
+
+    <div>
+      <label class="block text-xs font-semibold text-slate-400 mb-1">Segredo Mestre (igual ao app.js)</label>
+      <input type="text" id="segredo-mestre" value="GYM_MOZ_2026_SECRETO"
+             class="w-full p-3 rounded-2xl bg-[#04090e] border border-slate-800 text-xs font-mono text-slate-300 outline-none focus:border-teal-400">
+    </div>
+
+    <button type="button" onclick="gerarChave()"
+            class="w-full bg-teal-400 hover:bg-teal-300 text-slate-950 font-extrabold py-3 rounded-2xl text-sm transition">
+      Gerar Chave de Licença
+    </button>
+
+    <div id="resultado-box" class="hidden bg-[#04090e] border border-teal-500/30 rounded-2xl p-4 text-center space-y-2">
+      <p class="text-[11px] text-slate-400 uppercase tracking-wider">Chave Gerada</p>
+      <p id="chave-gerada" class="text-lg font-mono font-black text-teal-400 tracking-wider select-all"></p>
+      <button type="button" onclick="copiarChave()"
+              class="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#12222f] hover:bg-slate-700 text-slate-200 transition">
+        Copiar Chave
+      </button>
+    </div>
+  </div>
+
+  <script>
+    async function gerarChave() {
+      const gymId = document.getElementById("gym-id").value.trim().toUpperCase();
+      const lote = document.getElementById("lote-chave").value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+      const segredo = document.getElementById("segredo-mestre").value.trim();
+
+      if (!gymId || !lote || !segredo) {
+        alert("Preenche o ID do ginásio, o lote e o segredo mestre.");
+        return;
+      }
+
+      const textoParaAssinar = `${gymId}|${lote}|${segredo}`;
+      const encoder = new TextEncoder();
+      const data = encoder.encode(textoParaAssinar);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashHex = Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("")
+        .toUpperCase();
+
+      const chaveFinal = `${lote}-${hashHex.substring(0, 6)}`;
+      document.getElementById("chave-gerada").textContent = chaveFinal;
+      document.getElementById("resultado-box").classList.remove("hidden");
+    }
+
+    function copiarChave() {
+      const texto = document.getElementById("chave-gerada").textContent;
+      if (!texto) return;
+      navigator.clipboard?.writeText(texto);
+      alert("Chave copiada: " + texto);
+    }
+  </script>
+</body>
+</html>
